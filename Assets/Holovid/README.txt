@@ -16,5 +16,6 @@ TO USE:
 4) Apply your video to the material.
 5) play!  ^_^
 
-If the displacement is too high or too low you can adjust it either in said material, or in the GUI slider during play.
+* Toggle the GUI with space bar
+* If the displacement is too high or too low you can adjust it either in said material, or in the GUI slider during play.
 

@@ -19,6 +19,9 @@ public class mouseRotator : MonoBehaviour {
 
 	void Update () 
 	{
+        if (Input.GetKeyDown(KeyCode.Escape))
+            quitApp();
+
         if (Input.GetMouseButtonUp(0))
             paused = false;
 
@@ -35,4 +38,13 @@ public class mouseRotator : MonoBehaviour {
 
 		lastMousePos = Input.mousePosition;
 	}
+
+    public void quitApp()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+         Application.Quit();
+#endif
+    }
 }
