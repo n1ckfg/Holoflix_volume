@@ -32,6 +32,8 @@ Shader "Hypercube/Holovid/ParticleAdditive"
 			#pragma geometry GS_Main
 			#include "UnityCG.cginc"
 			
+			#pragma exclude_renderers glcore
+
 			#pragma shader_feature ENABLE_SOFTSLICING
 			#pragma multi_compile __ SOFT_SLICING
 			
