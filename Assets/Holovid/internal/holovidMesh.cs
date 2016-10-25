@@ -1,9 +1,15 @@
-﻿using UnityEngine;
+﻿//David Lycan - Define UNITY_VERSION_PRE_5_2
+#if UNITY_5_0 || UNITY_5_0_1 || UNITY_5_0_2 || UNITY_5_0_3 || UNITY_5_0_4 || UNITY_5_1 || UNITY_5_1_1 || UNITY_5_1_2 || UNITY_5_1_3 || UNITY_5_1_4 || UNITY_5_1_5
+	#define UNITY_VERSION_PRE_5_2
+#endif
+
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
 //creates a sufficiently dense mesh for the displacement
 
+[ExecuteInEditMode]
 public class holovidMesh : MonoBehaviour {
 
 	public int meshResX = 200;
@@ -21,22 +27,31 @@ public class holovidMesh : MonoBehaviour {
 
 	protected MovieTexture movie = null;
 	protected AudioSource audioSrc = null;
-
+	
+	//David Lycan - Previous dimensions for material input
+	private string previousdepthMovieMaterialShader = "";
+	private int graphicsShaderLevel = 0;
+	private int previousGraphicsShaderLevel = 0;
+	private Vector4 previousDims = Vector4.zero;
+	
 	void Start()
 	{
-		if (!movie) 
+		if (Application.isPlaying)
 		{
-			Renderer r = GetComponent<Renderer>();
-			if (r)
-				movie = (MovieTexture)r.material.mainTexture;
-		}
+			if (!movie) 
+			{
+				Renderer r = GetComponent<Renderer>();
+				if (r)
+					movie = (MovieTexture)r.material.mainTexture;
+			}
 
-		if (movie) 
-		{
-			movie.Play ();
-			audioSrc = GetComponent<AudioSource> ();
-			audioSrc.clip = movie.audioClip;
-			audioSrc.Play ();
+			if (movie) 
+			{
+				movie.Play ();
+				audioSrc = GetComponent<AudioSource> ();
+				audioSrc.clip = movie.audioClip;
+				audioSrc.Play ();
+			}
 		}
 	}
 
@@ -78,10 +93,24 @@ public class holovidMesh : MonoBehaviour {
 	{
 		GetComponent<Renderer>().material.SetFloat("_Displacement", depthSlider.value);
 	}
-
-
-	void OnValidate()
+	
+	void Update()
 	{
+		
+		//David Lycan - Detect whether current Graphics Shader Level supports Geometry shaders
+		if (depthMovieMaterial.HasProperty("_GeometryFallback") )
+		{
+			graphicsShaderLevel = 1;
+		}
+		else if (depthMovieMaterial.HasProperty("_GeometryHolovid") )
+		{
+			graphicsShaderLevel = 2;
+		}
+		else
+		{
+			graphicsShaderLevel = 0;
+		}
+		
 		meshResX = Mathf.Clamp (meshResX, 1, 255);
 		meshResY = Mathf.Clamp (meshResY, 1, 254); //maximum vert count limit
 
@@ -94,6 +123,19 @@ public class holovidMesh : MonoBehaviour {
 		if (rgbDim.y < 1)
 			rgbDim.y = 1;
 
+		//David Lycan - Update the dimensions in the movie's material if necessary
+		Vector4 newDims = new Vector4( 1.07333f * rgbDim.y / imageRes.x, 1.09f * rgbDim.y / imageRes.y, 1f, 1f);
+		
+		if (previousDims != newDims)
+		{
+			if (graphicsShaderLevel > 0)
+			{
+				depthMovieMaterial.SetVector("_Dims", newDims);
+			}
+			
+			previousDims = newDims;
+		}
+		
 		
 		generateHolovidMesh (gameObject, 
 			new Vector2 (-.5f, -.5f), //position of the mesh
@@ -113,6 +155,8 @@ public class holovidMesh : MonoBehaviour {
 		List<Vector3> verts = new List<Vector3>();
 		List<int> triangles = new List<int>();
 		List<Vector2> uvs = new List<Vector2>();
+		//David Lycan - Added a second uv list
+		List<Vector2> uv2s = new List<Vector2>();
 		List<Vector3> normals = new List<Vector3>();
 
 		//vert index
@@ -149,32 +193,94 @@ public class holovidMesh : MonoBehaviour {
 				uvs.Add (uv);
 
 				normals.Add (Vector3.forward);
+				
+				//David Lycan - When the Graphics Shader Level does not support Geometry shaders add the extra vertices, uvs and normals necessary
+				//				Also add triangles to form each billboard quad here
+				if (graphicsShaderLevel == 1)
+				{
+					verts.Add(lerpedVector);
+					verts.Add(lerpedVector);
+					verts.Add(lerpedVector);
+					
+					uvs.Add (uv);
+					uvs.Add (uv);
+					uvs.Add (uv);
+					
+					uv2s.Add (new Vector2( 1f,  1f) );
+					uv2s.Add (new Vector2(-1f,  1f) );
+					uv2s.Add (new Vector2( 1f, -1f) );
+					uv2s.Add (new Vector2(-1f, -1f) );
+					
+					normals.Add (Vector3.forward);
+					normals.Add (Vector3.forward);
+					normals.Add (Vector3.forward);
+				}
 			}
 		}
-
+		
+		
 		//triangles
 		//we only want < gridunits because the very last verts in bth directions don't need triangles drawn for them.
-		for (int x = 0; x < xTesselation; x++)
+		//David Lycan - When the Graphics Shader Level does support Geometry shaders or the default Holovid shader is being used then add triangles to form the video geometry here
+		if (graphicsShaderLevel == 1)
 		{
-			for (int y = 0; y < yTesselation; y++)
+			for (int x = 0; x < xTesselation; x++)
 			{
-				triangles.Add(x + ((y + 1) * (xTesselation + 1)));
-				triangles.Add((x + 1) + (y * (xTesselation + 1)));
-				triangles.Add(x + (y * (xTesselation + 1))); //width in verts
-
-				triangles.Add(x + ((y + 1) * (xTesselation + 1)));
-				triangles.Add((x + 1) + (y + 1) * (xTesselation + 1));
-				triangles.Add((x + 1) + (y * (xTesselation + 1)));
+				for (int y = 1; y <= yTesselation; y++)
+				{
+					triangles.Add(x * 4 + y * (xTesselation + 1) * 4 + 1);
+					triangles.Add(x * 4 + y * (xTesselation + 1) * 4 + 2);
+					triangles.Add(x * 4 + y * (xTesselation + 1) * 4);
+					
+					triangles.Add(x * 4 + y * (xTesselation + 1) * 4 + 1);
+					triangles.Add(x * 4 + y * (xTesselation + 1) * 4 + 3);
+					triangles.Add(x * 4 + y * (xTesselation + 1) * 4 + 2);
+				}
 			}
 		}
+		else
+		{
+			for (int x = 0; x < xTesselation; x++)
+			{
+				for (int y = 0; y < yTesselation; y++)
+				{
+					triangles.Add(x + ((y + 1) * (xTesselation + 1)));
+					triangles.Add((x + 1) + (y * (xTesselation + 1)));
+					triangles.Add(x + (y * (xTesselation + 1))); //width in verts
 
+					if (graphicsShaderLevel != 2)
+					{
+						triangles.Add(x + ((y + 1) * (xTesselation + 1)));
+						triangles.Add((x + 1) + (y + 1) * (xTesselation + 1));
+						triangles.Add((x + 1) + (y * (xTesselation + 1)));
+					}
+				}
+			}
+		}
+		
 
 		Mesh newMesh = new Mesh();
-
-		newMesh.SetVertices(verts);
-		newMesh.SetTriangles(triangles, 0);
-		newMesh.SetUVs(0, uvs);
-		newMesh.SetNormals (normals);
+		
+		//David Lycan - Set Mesh method is now based on the Unity version
+		#if UNITY_VERSION_PRE_5_2
+			newMesh.vertices = verts.ToArray();
+			newMesh.triangles = triangles.ToArray();
+			newMesh.uv = uvs.ToArray();
+			if (graphicsShaderLevel == 1)
+			{
+				newMesh.uv2 = uv2s.ToArray();
+			}
+			newMesh.normals = normals.ToArray();
+		#else
+			newMesh.SetVertices(verts);
+			newMesh.SetTriangles(triangles, 0);
+			newMesh.SetUVs(0, uvs);
+			if (graphicsShaderLevel == 1)
+			{
+				newMesh.SetUVs(1, uv2s);
+			}
+			newMesh.SetNormals (normals);
+		#endif
 
 		//newMesh.RecalculateBounds();
 		//newMesh.RecalculateNormals();
