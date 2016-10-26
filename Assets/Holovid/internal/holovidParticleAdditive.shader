@@ -13,7 +13,6 @@ Shader "Hypercube/Holovid/ParticleAdditive"
 		_ParticleUV ("Particle UV", Range(0, 1)) = 1
 		[Toggle(ENABLE_SOFTSLICING)] _softSlicingToggle ("Soft Sliced", Float) = 1
 		[HideInInspector]_Dims ("UV Projection Scale", Vector) = (1,1,1,1)
-		[HideInInspector]_GeometryHolovid ("Geometry Holovid", Range(0, 1)) = 1
 	}
 
 	SubShader 
@@ -168,5 +167,5 @@ Shader "Hypercube/Holovid/ParticleAdditive"
 			ENDCG
 		}
 	}
-	//Fallback "Hidden/HolovidParticleAdditiveFallback"
+	//Fallback "Hidden/Holovid/ParticleAdditiveFallback"
 }

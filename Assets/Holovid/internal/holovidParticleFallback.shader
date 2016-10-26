@@ -1,7 +1,7 @@
 // Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 // Upgrade NOTE: replaced '_World2Object' with 'unity_WorldToObject'
 
-Shader "Hidden/HolovidParticleOpaqueFallback"
+Shader "Hidden/Holovid/ParticleFallback"
 {
 	Properties 
 	{
@@ -12,7 +12,6 @@ Shader "Hidden/HolovidParticleOpaqueFallback"
 		_ParticleUV ("Particle UV", Range(0, 1)) = 1
 		[Toggle(ENABLE_SOFTSLICING)] _softSlicingToggle ("Soft Sliced", Float) = 1
 		[HideInInspector]_Dims ("UV Projection Scale", Vector) = (1,1,1,1)
-		[HideInInspector]_GeometryFallback ("Geometry Fallback", Range(0, 1)) = 1
 	}
 
 	SubShader 
