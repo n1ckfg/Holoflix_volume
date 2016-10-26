@@ -168,5 +168,5 @@ Shader "Hypercube/Holovid/ParticleAdditive"
 			ENDCG
 		}
 	}
-	Fallback "Hidden/HolovidParticleAdditiveFallback"
+	//Fallback "Hidden/HolovidParticleAdditiveFallback"
 }

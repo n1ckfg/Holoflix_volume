@@ -29,11 +29,17 @@ public class holovidMesh : MonoBehaviour {
 	protected AudioSource audioSrc = null;
 	
 	//David Lycan - Previous dimensions for material input
-	private string previousdepthMovieMaterialShader = "";
 	private int graphicsShaderLevel = 0;
-	private int previousGraphicsShaderLevel = 0;
 	private Vector4 previousDims = Vector4.zero;
-	
+
+
+	Shader currentShader;
+	public Shader holovidShader;
+	public Shader particleShader;
+	public Shader particleAdditiveShader;
+	public Shader particleFallbackShader;
+	public Shader particleAdditiveFallbackShader;
+
 	void Start()
 	{
 		if (Application.isPlaying)
@@ -62,6 +68,7 @@ public class holovidMesh : MonoBehaviour {
 			movie.Play();
 		if (audioSrc)
 			audioSrc.Play ();
+
 	}
 	public void stop()
 	{
@@ -79,6 +86,7 @@ public class holovidMesh : MonoBehaviour {
 		if (audioSrc)
 			audioSrc.Pause ();
 	}
+		
 
 	IEnumerator stopping()
 	{
@@ -96,21 +104,45 @@ public class holovidMesh : MonoBehaviour {
 	
 	void Update()
 	{
-		
 		//David Lycan - Detect whether current Graphics Shader Level supports Geometry shaders
-		if (depthMovieMaterial.HasProperty("_GeometryFallback") )
+		//manually set the fallbacks so we can detect that the fallback occured and adjust our geometry accordingly
+		currentShader = GetComponent<Renderer>().sharedMaterial.shader;
+
+		if (currentShader == particleShader && !particleShader.isSupported) 
 		{
-			graphicsShaderLevel = 1;
+			GetComponent<Renderer> ().sharedMaterial.shader = particleFallbackShader;
+			currentShader = particleFallbackShader;
 		}
-		else if (depthMovieMaterial.HasProperty("_GeometryHolovid") )
+
+		if (currentShader == particleAdditiveShader && !particleAdditiveShader.isSupported) 
 		{
+			GetComponent<Renderer> ().sharedMaterial.shader = particleAdditiveFallbackShader;
+			currentShader = particleAdditiveFallbackShader;
+		}
+
+		if (currentShader == particleFallbackShader && !particleFallbackShader.isSupported) 
+		{
+			GetComponent<Renderer> ().sharedMaterial.shader = holovidShader;
+			currentShader = holovidShader;
+		}
+		if (currentShader == particleAdditiveFallbackShader && !particleAdditiveFallbackShader.isSupported) 
+		{
+			GetComponent<Renderer> ().sharedMaterial.shader = holovidShader;
+			currentShader = holovidShader;
+		}
+
+		if (currentShader == particleShader || currentShader == particleAdditiveShader) 
 			graphicsShaderLevel = 2;
-		}
+		else if (currentShader == particleFallbackShader || currentShader == particleAdditiveFallbackShader) 
+			graphicsShaderLevel = 1;
 		else
-		{
 			graphicsShaderLevel = 0;
-		}
+			
 		
+
+
+
+
 		meshResX = Mathf.Clamp (meshResX, 1, 255);
 		meshResY = Mathf.Clamp (meshResY, 1, 254); //maximum vert count limit
 
