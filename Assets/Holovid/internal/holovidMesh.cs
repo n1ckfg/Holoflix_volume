@@ -191,8 +191,9 @@ public class holovidMesh : MonoBehaviour {
 		List<Vector2> uv2s = new List<Vector2>();
 		List<Vector3> normals = new List<Vector3>();
 
-		//vert index
-		for (int r = 0; r <= yTesselation; r++)
+        //vert index
+        Vector2 uv = new Vector2();
+        for (int r = 0; r <= yTesselation; r++)
 		{
 			//lerp between the top left and bottom left, then lerp between the top right and bottom right, and save the vectors
 
@@ -216,9 +217,9 @@ public class holovidMesh : MonoBehaviour {
 
 				//uvs
 				//uvs.Add(new Vector2((float)c / (float)xTesselation, (float)r / yTesselation)); //0-1 code
-				Vector2 uv = new Vector2 (
-					             (float)c / (float)xTesselation, 
-								(float)r / (float)yTesselation);
+				uv.x = (float)c / (float)xTesselation;
+                uv.y = (float)r / (float)yTesselation;
+
 				uv.x *= UVdims.x;
 				uv.y *= UVdims.y;
 				uv += UVpos;
