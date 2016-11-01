@@ -1,7 +1,7 @@
 // Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 // Upgrade NOTE: replaced '_World2Object' with 'unity_WorldToObject'
 
-Shader "Hypercube/Holovid/ParticleAdditive"
+Shader "Hypercube/Holovid/ParticleCutout"
 {
 	Properties 
 	{
@@ -9,8 +9,9 @@ Shader "Hypercube/Holovid/ParticleAdditive"
 		_Displacement ("Extrusion Amount", Range(-10,10)) = 0.5
 		_ForcedPerspective("Forced Perspective", Range(-1,20)) = 0
 		_ParticleTex ("Particle Texture", 2D) = "white" {}
-		_ParticleSize ("Particle Size", Range(0.001, 0.5)) = 0.025
+		_ParticleSize ("Particle Size", Range(0.001, 0.25)) = 0.025
 		_ParticleUV ("Particle UV", Range(0, 1)) = 1
+		_Cutoff ("Alpha cutoff", Range (0,1)) = 0.5
 		[Toggle(ENABLE_SOFTSLICING)] _softSlicingToggle ("Soft Sliced", Float) = 1
 		[HideInInspector]_Dims ("UV Projection Scale", Vector) = (1,1,1,1)
 		[HideInInspector]_GeometryHolovid ("Geometry Holovid", Range(0, 1)) = 1
@@ -18,11 +19,9 @@ Shader "Hypercube/Holovid/ParticleAdditive"
 
 	SubShader 
 	{
-		Tags { "Queue"="Transparent" "IgnoreProjector"="True" "RenderType"="Transparent" }
-        AlphaTest Greater .01
-		ColorMask RGB
-		Lighting Off ZWrite Off
-		Blend SrcAlpha One
+		Tags {"Queue"="AlphaTest" "IgnoreProjector"="True" "RenderType"="TransparentCutout"}
+		Blend One Zero
+		ZWrite On
 		
 		Pass
 		{
@@ -32,8 +31,6 @@ Shader "Hypercube/Holovid/ParticleAdditive"
 			#pragma geometry GS_Main
 			#include "UnityCG.cginc"
 			
-			#pragma exclude_renderers glcore
-
 			#pragma shader_feature ENABLE_SOFTSLICING
 			#pragma multi_compile __ SOFT_SLICING
 			
@@ -67,6 +64,7 @@ Shader "Hypercube/Holovid/ParticleAdditive"
 			SamplerState sampler_ParticleTex;
 			float _softPercent;
 			half4 _blackPoint;
+			fixed _Cutoff;
 			
 			float4 _Dims;
 
@@ -139,6 +137,7 @@ Shader "Hypercube/Holovid/ParticleAdditive"
 			float4 FS_Main(FS_INPUT i) : COLOR
 			{
 				fixed4 col = tex2D(_MainTex, i.uv0) * _ParticleTex.Sample(sampler_ParticleTex, i.uv1);
+				clip (col.a - _Cutoff);
 				col.xyz += _blackPoint.xyz;
 			
 				#if defined(SOFT_SLICING) && defined(ENABLE_SOFTSLICING)
@@ -168,5 +167,5 @@ Shader "Hypercube/Holovid/ParticleAdditive"
 			ENDCG
 		}
 	}
-	Fallback "Hidden/HolovidParticleAdditiveFallback"
+	Fallback "Hidden/HolovidParticleCutoutFallback"
 }
