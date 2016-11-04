@@ -182,7 +182,9 @@ public class holovidMesh : MonoBehaviour {
 		xTesselation = Mathf.Clamp (xTesselation, 1, 255);
 		yTesselation = Mathf.Clamp (yTesselation, 1, 254);
 
-		//do stufff
+//		int vertCount = (yTesselation * xTesselation) + 2; //+2 is inclusive since we need verts at the end of the count to complete the quads
+//		if (graphicsShaderLevel == 1)
+//			vertCount = vertCount * 4; //we need to account for our own verts here, since our GPU does not support the needed shader
 
 		List<Vector3> verts = new List<Vector3>();
 		List<int> triangles = new List<int>();
@@ -190,6 +192,7 @@ public class holovidMesh : MonoBehaviour {
 		//David Lycan - Added a second uv list
 		List<Vector2> uv2s = new List<Vector2>();
 		List<Vector3> normals = new List<Vector3>();
+
 
         //vert index
         Vector2 uv = new Vector2();
@@ -292,41 +295,40 @@ public class holovidMesh : MonoBehaviour {
 		}
 		
 
-		Mesh newMesh = new Mesh();
+		//now that we have the mesh ready to go lets put it in
+		MeshFilter meshFilter = g.GetComponent<MeshFilter>();
+		if (!meshFilter)
+			meshFilter = g.AddComponent<MeshFilter> ();
 		
 		//David Lycan - Set Mesh method is now based on the Unity version
 		#if UNITY_VERSION_PRE_5_2
-			newMesh.vertices = verts.ToArray();
-			newMesh.triangles = triangles.ToArray();
-			newMesh.uv = uvs.ToArray();
+			meshFilter.vertices = verts.ToArray();
+			meshFilter.triangles = triangles.ToArray();
+			meshFilter.uv = uvs.ToArray();
 			if (graphicsShaderLevel == 1)
 			{
-				newMesh.uv2 = uv2s.ToArray();
+				meshFilter.uv2 = uv2s.ToArray();
 			}
-			newMesh.normals = normals.ToArray();
+			meshFilter.normals = normals.ToArray();
 		#else
-			newMesh.SetVertices(verts);
-			newMesh.SetTriangles(triangles, 0);
-			newMesh.SetUVs(0, uvs);
+			meshFilter.sharedMesh.SetVertices(verts);
+			meshFilter.sharedMesh.SetTriangles(triangles, 0);
+			meshFilter.sharedMesh.SetUVs(0, uvs);
 			if (graphicsShaderLevel == 1)
 			{
-				newMesh.SetUVs(1, uv2s);
+				meshFilter.sharedMesh.SetUVs(1, uv2s);
 			}
-			newMesh.SetNormals (normals);
+			meshFilter.sharedMesh.SetNormals (normals);
 		#endif
 
 		//newMesh.RecalculateBounds();
 		//newMesh.RecalculateNormals();
 
-		//now that we have the mesh ready to go lets put it in
-		MeshFilter meshFilter = g.GetComponent<MeshFilter>();
-		if (!meshFilter)
-			meshFilter = g.AddComponent<MeshFilter> ();
+	
 		//MeshRenderer meshRenderer = g.GetComponent<MeshRenderer>();
 
 		//HACK ALERT!
-		newMesh.bounds = new Bounds(Vector3.zero, new Vector3(200f,200f,200f)); //just make huge bounds. always draw it, don't mess around here.
+		meshFilter.sharedMesh.bounds = new Bounds(Vector3.zero, new Vector3(200f,200f,200f)); //just make huge bounds. always draw it, don't mess around here.
 
-		meshFilter.sharedMesh = newMesh;
 	}
 }
