@@ -312,7 +312,7 @@ public class holovidMesh : MonoBehaviour {
 			meshFilter.normals = normals.ToArray();
 		#else
 			meshFilter.sharedMesh.SetVertices(verts);
-			meshFilter.sharedMesh.SetTriangles(triangles, 0);
+			meshFilter.sharedMesh.SetTriangles(triangles, 0, true); //recalculate bounds
 			meshFilter.sharedMesh.SetUVs(0, uvs);
 			if (graphicsShaderLevel == 1)
 			{
@@ -320,15 +320,6 @@ public class holovidMesh : MonoBehaviour {
 			}
 			meshFilter.sharedMesh.SetNormals (normals);
 		#endif
-
-		//newMesh.RecalculateBounds();
-		//newMesh.RecalculateNormals();
-
-	
-		//MeshRenderer meshRenderer = g.GetComponent<MeshRenderer>();
-
-		//HACK ALERT!
-		meshFilter.sharedMesh.bounds = new Bounds(Vector3.zero, new Vector3(200f,200f,200f)); //just make huge bounds. always draw it, don't mess around here.
 
 	}
 }
