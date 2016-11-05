@@ -179,9 +179,13 @@ public class holoflixMesh : MonoBehaviour {
 
 	void checkShaders()
 	{
-		//David Lycan - Detect whether current Graphics Shader Level supports Geometry shaders
+		//Detect whether current Graphics Shader Level supports Geometry shaders
 		//manually set the fallbacks so we can detect that the fallback occured and adjust our geometry accordingly
 		Material m = GetComponent<Renderer>().sharedMaterial;
+		if (!m) 
+		{
+			return;
+		}
 		currentShader = m.shader;
 		if (currentShader == _lastShader) //nothing to do here.
 			return;
@@ -218,6 +222,10 @@ public class holoflixMesh : MonoBehaviour {
 			m.shader = holovidShader;
 			currentShader = holovidShader;
 		}
+
+		//shader level 2 means we can support everything.  Probably this machine is using >= DX11 This will mean the GPU will cut the mesh as needed.
+		//shader level 1 means the GPU can't support cutting up the mesh, so we have to do the cutting in C# and the shader only pushes the verts around based on camera view.
+		//shader level 0 means we are just trying to use the simplest method, which is just vert displacement based on the depth movie texture values and material settings, with no mesh cutting
 
 		if (currentShader == particleShader || currentShader == particleAdditiveShader || currentShader == particleCutoutShader) 
 			graphicsShaderLevel = 2;
