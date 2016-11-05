@@ -103,22 +103,22 @@ Shader "Holoflix/Particle"
 				float4x4 vp = mul(UNITY_MATRIX_MVP, unity_WorldToObject);
 				FS_INPUT pIn;
 				pIn.vertex = mul(vp, v[0]);
-				pIn.uv = p[0].uv + scaleUV * float2(1, 1);
-				pIn.projPosZ = p[0].projPosZ;
-				triStream.Append(pIn);
-
-				pIn.vertex =  mul(vp, v[1]);
 				pIn.uv = p[0].uv + scaleUV * float2(-1, 1);
 				pIn.projPosZ = p[0].projPosZ;
 				triStream.Append(pIn);
 
+				pIn.vertex =  mul(vp, v[1]);
+				pIn.uv = p[0].uv + scaleUV * float2(1, 1);
+				pIn.projPosZ = p[0].projPosZ;
+				triStream.Append(pIn);
+
 				pIn.vertex =  mul(vp, v[2]);
-				pIn.uv = p[0].uv + scaleUV * float2(1, -1);
+				pIn.uv = p[0].uv + scaleUV * float2(-1, -1);
 				pIn.projPosZ = p[0].projPosZ;
 				triStream.Append(pIn);
 
 				pIn.vertex =  mul(vp, v[3]);
-				pIn.uv = p[0].uv + scaleUV * float2(-1, -1);
+				pIn.uv = p[0].uv + scaleUV * float2(1, -1);
 				pIn.projPosZ = p[0].projPosZ;
 				triStream.Append(pIn);
 			}

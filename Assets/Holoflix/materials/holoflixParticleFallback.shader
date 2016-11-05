@@ -86,7 +86,7 @@ Shader "Hidden/Holoflix/ParticleFallback"
 				FS_INPUT o;
 				o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
 				
-				o.uv = TRANSFORM_TEX(v.uv0.xy, _MainTex) + float2(unity_WorldToObject[0][0], unity_WorldToObject[1][1]) * _ParticleSize * _Dims.xy * _ParticleUV * v.uv1;
+				o.uv = TRANSFORM_TEX(v.uv0.xy, _MainTex) + float2(-unity_WorldToObject[0][0], unity_WorldToObject[1][1]) * _ParticleSize * _Dims.xy * _ParticleUV * v.uv1;
 				
 				UNITY_TRANSFER_FOG(o,o.vertex);
 				o.projPosZ = o.vertex.z;

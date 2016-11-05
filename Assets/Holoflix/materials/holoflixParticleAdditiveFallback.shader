@@ -93,7 +93,7 @@ Shader "Hidden/Holoflix/ParticleAdditiveFallback"
 				FS_INPUT o;
 				o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
 				
-				o.uv0 = TRANSFORM_TEX(v.uv0.xy, _MainTex) + float2(unity_WorldToObject[0][0], unity_WorldToObject[1][1]) * _ParticleSize * _Dims.xy * _ParticleUV * v.uv1;
+				o.uv0 = TRANSFORM_TEX(v.uv0.xy, _MainTex) + float2(-unity_WorldToObject[0][0], unity_WorldToObject[1][1]) * _ParticleSize * _Dims.xy * _ParticleUV * v.uv1;
 				o.uv1 = float2(v.uv1.x * -0.5 + 0.5, v.uv1.y * 0.5 + 0.5);
 				
 				UNITY_TRANSFER_FOG(o,o.vertex);

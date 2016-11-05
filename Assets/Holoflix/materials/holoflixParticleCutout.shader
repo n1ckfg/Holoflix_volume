@@ -112,25 +112,25 @@ Shader "Holoflix/ParticleCutout"
 				float4x4 vp = mul(UNITY_MATRIX_MVP, unity_WorldToObject);
 				FS_INPUT pIn;
 				pIn.vertex = mul(vp, v[0]);
-				pIn.uv0 = p[0].uv0 + scaleUV * float2(1, 1);
+				pIn.uv0 = p[0].uv0 + scaleUV * float2(-1, 1);
 				pIn.uv1 = float2(0, 1);
 				pIn.projPosZ = p[0].projPosZ;
 				triStream.Append(pIn);
 
 				pIn.vertex =  mul(vp, v[1]);
-				pIn.uv0 = p[0].uv0 + scaleUV * float2(-1, 1);
+				pIn.uv0 = p[0].uv0 + scaleUV * float2(1, 1);
 				pIn.uv1 = float2(1, 1);
 				pIn.projPosZ = p[0].projPosZ;
 				triStream.Append(pIn);
 
 				pIn.vertex =  mul(vp, v[2]);
-				pIn.uv0 = p[0].uv0 + scaleUV * float2(1, -1);
+				pIn.uv0 = p[0].uv0 + scaleUV * float2(-1, -1);
 				pIn.uv1 = float2(0, 0);
 				pIn.projPosZ = p[0].projPosZ;
 				triStream.Append(pIn);
 
 				pIn.vertex =  mul(vp, v[3]);
-				pIn.uv0 = p[0].uv0 + scaleUV * float2(-1, -1);
+				pIn.uv0 = p[0].uv0 + scaleUV * float2(1, -1);
 				pIn.uv1 = float2(1, 0);
 				pIn.projPosZ = p[0].projPosZ;
 				triStream.Append(pIn);
