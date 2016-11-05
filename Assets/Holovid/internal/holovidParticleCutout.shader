@@ -1,7 +1,7 @@
 // Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 // Upgrade NOTE: replaced '_World2Object' with 'unity_WorldToObject'
 
-Shader "Hypercube/Holovid/ParticleCutout"
+Shader "Holoflix/ParticleCutout"
 {
 	Properties 
 	{
@@ -33,6 +33,8 @@ Shader "Hypercube/Holovid/ParticleCutout"
 			
 			#pragma shader_feature ENABLE_SOFTSLICING
 			#pragma multi_compile __ SOFT_SLICING
+
+			#pragma exclude_renderers glcore
 			
 			struct GS_INPUT
 			{
@@ -167,5 +169,5 @@ Shader "Hypercube/Holovid/ParticleCutout"
 			ENDCG
 		}
 	}
-	Fallback "Hidden/HolovidParticleCutoutFallback"
+//	Fallback "Hidden/HoloflixParticleCutoutFallback"
 }

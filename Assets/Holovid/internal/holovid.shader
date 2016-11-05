@@ -1,4 +1,4 @@
-﻿Shader "Hypercube/Holovid/Holovid"
+﻿Shader "Holoflix/Holoflix"
 {
 	Properties
 	{

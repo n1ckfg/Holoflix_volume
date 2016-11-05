@@ -1,7 +1,7 @@
 // Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 // Upgrade NOTE: replaced '_World2Object' with 'unity_WorldToObject'
 
-Shader "Hypercube/Holovid/Particle"
+Shader "Holoflix/Particle"
 {
 	Properties 
 	{
@@ -155,5 +155,5 @@ Shader "Hypercube/Holovid/Particle"
 			ENDCG
 		}
 	}
-	//Fallback "Hidden/Holovid/ParticleFallback"
+	//Fallback "Hidden/Holoflix/ParticleFallback"
 }

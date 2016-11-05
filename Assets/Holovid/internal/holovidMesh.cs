@@ -32,13 +32,19 @@ public class holovidMesh : MonoBehaviour {
 	private int graphicsShaderLevel = 0;
 	private Vector4 previousDims = Vector4.zero;
 
-
+	//these are necessary because there is no way (that i know of or could find) to detect if a shader is using a fallback.
+	//so we handle falling back ourselves.
+	//for example, if we include the fallbacks in the shader itself, shader.isSupported will return true (since its fallback is working)
+	//but this leaves us no way to know that the fallback is being used. Among several possible hacks/workarounds, this is the one I found most stable.
+	//We just detect failed shader.isSupported, and manage the falling back ourselves.
 	Shader currentShader;
 	public Shader holovidShader;
 	public Shader particleShader;
 	public Shader particleAdditiveShader;
+	public Shader particleCutoutShader;
 	public Shader particleFallbackShader;
 	public Shader particleAdditiveFallbackShader;
+	public Shader particleCutoutFallbackShader;
 
 	//internal mesh generating stuff.  These are member variables to prevent tons of GC allocation
 	List<Vector3> verts = null;
@@ -56,6 +62,7 @@ public class holovidMesh : MonoBehaviour {
 
 	int _currentResX = 0; //these help us ensure that we are always building meshes of the appropriate size even if the dev or user makes changes to our dims 
 	int _currentResY = 0;
+	Shader _lastShader = null;
 
 	void Start()
 	{
@@ -126,7 +133,13 @@ public class holovidMesh : MonoBehaviour {
 		meshResX = Mathf.Clamp (meshResX, 1, 255);
 		meshResY = Mathf.Clamp (meshResY, 1, 254);
 
-		//populate all the arrays for recycling later. This way we avoid tons of GC allocation
+		while (meshResX + meshResY > 253)//this will create too many verts 
+		{ 
+			Debug.Log ("Reducing the mesh resolution, too many verts would be created."); //remember unity can only have 64k verts on a mesh
+			meshResX--;
+		}
+
+		//populate all the arrays outside of the mesh update loop to avoid tons of GC allocation
 		int vertCount = (meshResX + 1) * (meshResY + 1); //+1 is inclusive since we need verts at the end of the count to complete the quads
 		if (graphicsShaderLevel == 1)
 			vertCount = vertCount * 4; //we need to account for our own verts here, since our GPU does not support the needed shader
@@ -162,37 +175,60 @@ public class holovidMesh : MonoBehaviour {
 	{
 		//David Lycan - Detect whether current Graphics Shader Level supports Geometry shaders
 		//manually set the fallbacks so we can detect that the fallback occured and adjust our geometry accordingly
-		currentShader = GetComponent<Renderer>().sharedMaterial.shader;
+		Material m = GetComponent<Renderer>().sharedMaterial;
+		currentShader = m.shader;
+		if (currentShader == _lastShader) //nothing to do here.
+			return;
 
 		if (currentShader == particleShader && !particleShader.isSupported) 
 		{
-			GetComponent<Renderer> ().sharedMaterial.shader = particleFallbackShader;
+			m.shader = particleFallbackShader;
 			currentShader = particleFallbackShader;
 		}
-
 		if (currentShader == particleAdditiveShader && !particleAdditiveShader.isSupported) 
 		{
-			GetComponent<Renderer> ().sharedMaterial.shader = particleAdditiveFallbackShader;
+			m.shader = particleAdditiveFallbackShader;
 			currentShader = particleAdditiveFallbackShader;
 		}
+		if (currentShader == particleCutoutShader && !particleCutoutShader.isSupported) 
+		{
+			m.shader = particleCutoutFallbackShader;
+			currentShader = particleCutoutFallbackShader;
+		}
 
+		//if even the fallback is bad, then fall back to the default holovid shader.
 		if (currentShader == particleFallbackShader && !particleFallbackShader.isSupported) 
 		{
-			GetComponent<Renderer> ().sharedMaterial.shader = holovidShader;
+			m.shader = holovidShader;
 			currentShader = holovidShader;
 		}
 		if (currentShader == particleAdditiveFallbackShader && !particleAdditiveFallbackShader.isSupported) 
 		{
-			GetComponent<Renderer> ().sharedMaterial.shader = holovidShader;
+			m.shader = holovidShader;
+			currentShader = holovidShader;
+		}
+		if (currentShader == particleCutoutFallbackShader && !particleCutoutFallbackShader.isSupported) 
+		{
+			m.shader = holovidShader;
 			currentShader = holovidShader;
 		}
 
-		if (currentShader == particleShader || currentShader == particleAdditiveShader) 
+		if (currentShader == particleShader || currentShader == particleAdditiveShader || currentShader == particleCutoutShader) 
 			graphicsShaderLevel = 2;
-		else if (currentShader == particleFallbackShader || currentShader == particleAdditiveFallbackShader) 
+		else if (currentShader == particleFallbackShader || currentShader == particleAdditiveFallbackShader || currentShader == particleCutoutFallbackShader) 
 			graphicsShaderLevel = 1;
 		else
 			graphicsShaderLevel = 0;
+
+		//Unity doesn't seem to set keyword shader values properly when switching materials
+		//meaning that the GUI may not match the shader's value.. the lines below forces them to be updated coherently
+		//for more info: https://docs.unity3d.com/ScriptReference/MaterialPropertyDrawer.html
+		m.EnableKeyword ("ENABLE_SOFTSLICING"); 
+		m.SetFloat ("_softSlicingToggle", 1f);
+
+
+		updateSettings ();
+		_lastShader = currentShader;
 	}
 	
 	void Update()
@@ -287,7 +323,7 @@ public class holovidMesh : MonoBehaviour {
 				{
 					if (v + 1 >= verts.Count) 
 					{
-						Debug.LogWarning ("Array sizes were not properly calculated in updateSettings()!?");
+						//Debug.LogWarning ("Array sizes were not properly calculated in updateSettings()!?");
 						return;
 					}
 					verts[v + 1] = lerpedVector;
@@ -373,7 +409,7 @@ public class holovidMesh : MonoBehaviour {
 			meshFilter.normals = normals.ToArray();
 		#else
 			meshFilter.sharedMesh.SetVertices(verts);
-			meshFilter.sharedMesh.SetTriangles(triangles, 0, true); //recalculate bounds
+			meshFilter.sharedMesh.SetTriangles(triangles, 0, false); //don't recalculate bounds
 			meshFilter.sharedMesh.SetUVs(0, uvs);
 			if (graphicsShaderLevel == 1)
 			{
@@ -382,5 +418,9 @@ public class holovidMesh : MonoBehaviour {
 			meshFilter.sharedMesh.SetNormals(normals);
 		#endif
 
+		//HACK ALERT!  just throw the bounds out very large, don't bother with precise calculations.
+		//the autocalculate doesn't work because the shader is the one that can move the verts around
+		//farther than the engine is expecting.
+		meshFilter.sharedMesh.bounds = new Bounds (Vector3.zero, new Vector3 (200f, 200f, 200f));
 	}
 }

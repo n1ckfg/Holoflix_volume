@@ -1,7 +1,7 @@
 // Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 // Upgrade NOTE: replaced '_World2Object' with 'unity_WorldToObject'
 
-Shader "Hidden/HolovidParticleCutoutFallback"
+Shader "Hidden/Holoflix/ParticleCutoutFallback"
 {
 	Properties 
 	{
@@ -32,6 +32,7 @@ Shader "Hidden/HolovidParticleCutoutFallback"
 			
 			#pragma shader_feature ENABLE_SOFTSLICING
 			#pragma multi_compile __ SOFT_SLICING 
+
 			
 			struct appdata
 			{

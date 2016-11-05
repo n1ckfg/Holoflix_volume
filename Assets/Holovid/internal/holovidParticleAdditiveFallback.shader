@@ -1,7 +1,7 @@
 // Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 // Upgrade NOTE: replaced '_World2Object' with 'unity_WorldToObject'
 
-Shader "Hidden/Holovid/ParticleAdditiveFallback"
+Shader "Hidden/Holoflix/ParticleAdditiveFallback"
 {
 	Properties 
 	{
@@ -29,7 +29,8 @@ Shader "Hidden/Holovid/ParticleAdditiveFallback"
 			#pragma vertex VS_Main
 			#pragma fragment FS_Main
 			#include "UnityCG.cginc"
-			
+
+
 			#pragma shader_feature ENABLE_SOFTSLICING
 			#pragma multi_compile __ SOFT_SLICING 
 			
