@@ -40,8 +40,27 @@ public class holovidMesh : MonoBehaviour {
 	public Shader particleFallbackShader;
 	public Shader particleAdditiveFallbackShader;
 
+	//internal mesh generating stuff.  These are member variables to prevent tons of GC allocation
+	List<Vector3> verts = null;
+	int[] triangles;
+	List<Vector2> uvs = null;
+	List<Vector2> uv2s = null;
+	List<Vector3> normals = null;
+
+	Vector3 bottomLeft = new Vector3 ();  //internal
+	Vector3 topRight = new Vector3 ();
+	Vector3 bottomRight = new Vector3 ();
+
+	Vector3 cellLeft = new Vector3 (); //internal
+	Vector3 cellRight = new Vector3 (); 
+
+	int _currentResX = 0; //these help us ensure that we are always building meshes of the appropriate size even if the dev or user makes changes to our dims 
+	int _currentResY = 0;
+
 	void Start()
 	{
+		checkShaders (); //just for safety.
+		
 		if (Application.isPlaying)
 		{
 			if (!movie) 
@@ -101,8 +120,45 @@ public class holovidMesh : MonoBehaviour {
 	{
 		GetComponent<Renderer>().material.SetFloat("_Displacement", depthSlider.value);
 	}
-	
-	void Update()
+
+	void updateSettings()
+	{
+		meshResX = Mathf.Clamp (meshResX, 1, 255);
+		meshResY = Mathf.Clamp (meshResY, 1, 254);
+
+		//populate all the arrays for recycling later. This way we avoid tons of GC allocation
+		int vertCount = (meshResX + 1) * (meshResY + 1); //+1 is inclusive since we need verts at the end of the count to complete the quads
+		if (graphicsShaderLevel == 1)
+			vertCount = vertCount * 4; //we need to account for our own verts here, since our GPU does not support the needed shader
+
+		int triangleCount =  meshResX * meshResY * 6;
+		if (graphicsShaderLevel == 2)
+			triangleCount = meshResX * meshResY * 3;
+
+		verts = new List<Vector3> (); 
+		uvs = new List<Vector2> ();
+		uv2s = new List<Vector2> ();
+		normals = new List<Vector3> ();
+		for (int v = 0; v < vertCount; v++) //populate the list.. verts are required in this format due to the way the mesh takes in verts as an argument
+		{
+			verts.Add (Vector3.zero);
+			uvs.Add (new Vector2());
+			uv2s.Add (new Vector2());
+			normals.Add (Vector3.zero);
+		}
+		triangles = new int[triangleCount];
+
+		_currentResX = meshResX;
+		_currentResY = meshResY;
+	}
+
+	void OnValidate()
+	{
+		checkShaders ();
+		updateSettings ();
+	}
+
+	void checkShaders()
 	{
 		//David Lycan - Detect whether current Graphics Shader Level supports Geometry shaders
 		//manually set the fallbacks so we can detect that the fallback occured and adjust our geometry accordingly
@@ -137,14 +193,18 @@ public class holovidMesh : MonoBehaviour {
 			graphicsShaderLevel = 1;
 		else
 			graphicsShaderLevel = 0;
-			
-		
-
-
-
+	}
+	
+	void Update()
+	{
+		checkShaders ();
 
 		meshResX = Mathf.Clamp (meshResX, 1, 255);
 		meshResY = Mathf.Clamp (meshResY, 1, 254); //maximum vert count limit
+		
+		if (meshResX != _currentResX || meshResY != _currentResY)
+			updateSettings ();
+
 
 		if (imageRes.x < 1)
 			imageRes.x = 1;
@@ -173,122 +233,123 @@ public class holovidMesh : MonoBehaviour {
 			new Vector2 (-.5f, -.5f), //position of the mesh
 			new Vector2 (rgbDim.x / rgbDim.y, 1f), //size of the mesh
 			new Vector2(rgbCoord.x/imageRes.x, rgbCoord.y/imageRes.y), // uv pos 
-			new Vector2 (rgbDim.x/imageRes.x, rgbDim.y/imageRes.y), //uv dims - send whole and let the shader do the work here.
-			meshResX, meshResY); 
+			new Vector2 (rgbDim.x/imageRes.x, rgbDim.y/imageRes.y)); //uv dims - send whole and let the shader do the work here.
 	}
 
-	void generateHolovidMesh(GameObject g, Vector2 pos, Vector2 dims, Vector2 UVpos, Vector2 UVdims, int xTesselation, int yTesselation)
+
+
+
+	void generateHolovidMesh(GameObject g, Vector2 pos, Vector2 dims, Vector2 UVpos, Vector2 UVdims)
 	{
-		xTesselation = Mathf.Clamp (xTesselation, 1, 255);
-		yTesselation = Mathf.Clamp (yTesselation, 1, 254);
-
-//		int vertCount = (yTesselation * xTesselation) + 2; //+2 is inclusive since we need verts at the end of the count to complete the quads
-//		if (graphicsShaderLevel == 1)
-//			vertCount = vertCount * 4; //we need to account for our own verts here, since our GPU does not support the needed shader
-
-		List<Vector3> verts = new List<Vector3>();
-		List<int> triangles = new List<int>();
-		List<Vector2> uvs = new List<Vector2>();
-		//David Lycan - Added a second uv list
-		List<Vector2> uv2s = new List<Vector2>();
-		List<Vector3> normals = new List<Vector3>();
 
 
         //vert index
+		int v = 0;
         Vector2 uv = new Vector2();
-        for (int r = 0; r <= yTesselation; r++)
+		for (int r = 0; r <= meshResY; r++)
 		{
 			//lerp between the top left and bottom left, then lerp between the top right and bottom right, and save the vectors
 
-			float rowLerpValue = (float)r / (float)yTesselation;
+			float rowLerpValue = (float)r / (float)meshResY;
 
-			Vector3 bottomLeft = new Vector3 (pos.x, pos.x + dims.y, 0f);
-			Vector3 topRight = new Vector3 (pos.x + dims.x, pos.y, 0f);
-			Vector3 bottomRight = new Vector3 (pos.x + dims.x, pos.y + dims.y, 0f);
+			bottomLeft.x = pos.x; bottomLeft.y = pos.x + dims.y; bottomLeft.z = 0f; //TODO try to use Set() ?  it doesn't always work.
+			topRight.x = pos.x + dims.x; topRight.y = pos.y; topRight.z =  0f;
+			bottomRight.Set(pos.x + dims.x, pos.y + dims.y, 0f);
 
-			Vector3 cellLeft = Vector3.Lerp(pos, bottomLeft, rowLerpValue); //lerp between topleft/bottomleft
-			Vector3 cellRight = Vector3.Lerp(topRight, bottomRight, rowLerpValue); //lerp between topright/bottomright
+			cellLeft = Vector3.Lerp(pos, bottomLeft, rowLerpValue); //lerp between topleft/bottomleft
+			cellRight = Vector3.Lerp(topRight, bottomRight, rowLerpValue); //lerp between topright/bottomright
 
-			for (int c = 0; c <= xTesselation; c++)
+			for (int c = 0; c <= meshResX; c++)
 			{
 				//Now that we have our start and end coordinates for the row, iteratively lerp between them to get the "columns"
-				float columnLerpValue = (float)c / (float)xTesselation;
+				float columnLerpValue = (float)c / (float)meshResX;
 
 				//now get the final lerped vector
 				Vector3 lerpedVector = Vector3.Lerp(cellLeft, cellRight, columnLerpValue);
-				verts.Add(lerpedVector);
+				verts[v] = lerpedVector;
 
 				//uvs
 				//uvs.Add(new Vector2((float)c / (float)xTesselation, (float)r / yTesselation)); //0-1 code
-				uv.x = (float)c / (float)xTesselation;
-                uv.y = (float)r / (float)yTesselation;
+				uv.x = (float)c / (float)meshResX;
+				uv.y = (float)r / (float)meshResY;
 
 				uv.x *= UVdims.x;
 				uv.y *= UVdims.y;
 				uv += UVpos;
-				uvs.Add (uv);
+				uvs[v] = uv;
 
-				normals.Add (Vector3.forward);
-				
+				normals[v] = Vector3.forward;
+
+
 				//David Lycan - When the Graphics Shader Level does not support Geometry shaders add the extra vertices, uvs and normals necessary
 				//				Also add triangles to form each billboard quad here
 				if (graphicsShaderLevel == 1)
 				{
-					verts.Add(lerpedVector);
-					verts.Add(lerpedVector);
-					verts.Add(lerpedVector);
+					if (v + 1 >= verts.Count) 
+					{
+						Debug.LogWarning ("Array sizes were not properly calculated in updateSettings()!?");
+						return;
+					}
+					verts[v + 1] = lerpedVector;
+					verts[v + 2] = lerpedVector;
+					verts[v + 3] = lerpedVector;
 					
-					uvs.Add (uv);
-					uvs.Add (uv);
-					uvs.Add (uv);
+					uvs[v + 1] = uv;
+					uvs[v + 2] = uv;
+					uvs[v + 3] = uv;
 					
-					uv2s.Add (new Vector2( 1f,  1f) );
-					uv2s.Add (new Vector2(-1f,  1f) );
-					uv2s.Add (new Vector2( 1f, -1f) );
-					uv2s.Add (new Vector2(-1f, -1f) );
+					uv2s[v] = 	  new Vector2( 1f,  1f);
+					uv2s[v + 1] = new Vector2(-1f,  1f);
+					uv2s[v + 2] = new Vector2( 1f, -1f);
+					uv2s[v + 3] = new Vector2(-1f, -1f);
 					
-					normals.Add (Vector3.forward);
-					normals.Add (Vector3.forward);
-					normals.Add (Vector3.forward);
+					normals[v + 1] = Vector3.forward;
+					normals[v + 2] = Vector3.forward;
+					normals[v + 3] = Vector3.forward;
+
+					v += 3;
 				}
+				v++;
 			}
 		}
-		
-		
-		//triangles
+
+
+		int t = 0;
 		//we only want < gridunits because the very last verts in bth directions don't need triangles drawn for them.
 		//David Lycan - When the Graphics Shader Level does support Geometry shaders or the default Holovid shader is being used then add triangles to form the video geometry here
+
 		if (graphicsShaderLevel == 1)
 		{
-			for (int x = 0; x < xTesselation; x++)
+			for (int x = 0; x < meshResX; x++)
 			{
-				for (int y = 1; y <= yTesselation; y++)
+				for (int y = 1; y <= meshResY; y++)
 				{
-					triangles.Add(x * 4 + y * (xTesselation + 1) * 4 + 1);
-					triangles.Add(x * 4 + y * (xTesselation + 1) * 4 + 2);
-					triangles.Add(x * 4 + y * (xTesselation + 1) * 4);
+					triangles[t] = x * 4 + y * (meshResX + 1) * 4 + 1; t++;
+					triangles[t] = x * 4 + y * (meshResX + 1) * 4 + 2; t++;
+					triangles[t] = x * 4 + y * (meshResX + 1) * 4; t++;
 					
-					triangles.Add(x * 4 + y * (xTesselation + 1) * 4 + 1);
-					triangles.Add(x * 4 + y * (xTesselation + 1) * 4 + 3);
-					triangles.Add(x * 4 + y * (xTesselation + 1) * 4 + 2);
+					triangles[t] = x * 4 + y * (meshResX + 1) * 4 + 1; t++;
+					triangles[t] = x * 4 + y * (meshResX + 1) * 4 + 3; t++;
+					triangles[t] = x * 4 + y * (meshResX + 1) * 4 + 2; t++;
+					
 				}
 			}
 		}
 		else
 		{
-			for (int x = 0; x < xTesselation; x++)
+			for (int x = 0; x < meshResX; x++)
 			{
-				for (int y = 0; y < yTesselation; y++)
+				for (int y = 0; y < meshResY; y++)
 				{
-					triangles.Add(x + ((y + 1) * (xTesselation + 1)));
-					triangles.Add((x + 1) + (y * (xTesselation + 1)));
-					triangles.Add(x + (y * (xTesselation + 1))); //width in verts
+					triangles[t] = x + ((y + 1) * (meshResX + 1)); t++;
+					triangles[t] = (x + 1) + (y * (meshResX + 1)); t++;
+					triangles[t] = x + (y * (meshResX + 1)); t++; //width in verts
 
 					if (graphicsShaderLevel != 2)
 					{
-						triangles.Add(x + ((y + 1) * (xTesselation + 1)));
-						triangles.Add((x + 1) + (y + 1) * (xTesselation + 1));
-						triangles.Add((x + 1) + (y * (xTesselation + 1)));
+						triangles[t] = x + ((y + 1) * (meshResX + 1)); t++;
+						triangles[t] = (x + 1) + (y + 1) * (meshResX + 1); t++;
+						triangles[t] = (x + 1) + (y * (meshResX + 1)); t++;
 					}
 				}
 			}
@@ -299,7 +360,7 @@ public class holovidMesh : MonoBehaviour {
 		MeshFilter meshFilter = g.GetComponent<MeshFilter>();
 		if (!meshFilter)
 			meshFilter = g.AddComponent<MeshFilter> ();
-		
+		meshFilter.sharedMesh.Clear ();
 		//David Lycan - Set Mesh method is now based on the Unity version
 		#if UNITY_VERSION_PRE_5_2
 			meshFilter.vertices = verts.ToArray();
@@ -318,7 +379,7 @@ public class holovidMesh : MonoBehaviour {
 			{
 				meshFilter.sharedMesh.SetUVs(1, uv2s);
 			}
-			meshFilter.sharedMesh.SetNormals (normals);
+			meshFilter.sharedMesh.SetNormals(normals);
 		#endif
 
 	}
