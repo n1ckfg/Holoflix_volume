@@ -10,7 +10,7 @@ using System.Collections.Generic;
 //creates a sufficiently dense mesh for the displacement
 
 [ExecuteInEditMode]
-public class holovidMesh : MonoBehaviour {
+public class holoflixMesh : MonoBehaviour {
 
 	public int meshResX = 200;
 	public int meshResY = 200;
@@ -24,6 +24,8 @@ public class holovidMesh : MonoBehaviour {
 	public Material depthMovieMaterial;
 
 	public UnityEngine.UI.Slider depthSlider;
+	public UnityEngine.UI.Slider perspSlider;
+	public UnityEngine.UI.Slider sizeSlider;
 
 	protected MovieTexture movie = null;
 	protected AudioSource audioSrc = null;
@@ -85,6 +87,8 @@ public class holovidMesh : MonoBehaviour {
 				audioSrc.Play ();
 			}
 		}
+
+		sliderChanged (); //start with whatever values the sliders have
 	}
 
 
@@ -122,10 +126,12 @@ public class holovidMesh : MonoBehaviour {
 		movie.Pause ();//.should now be at frame 1
 
 	}
-
-	public void setDepth()
+		
+	public void sliderChanged()
 	{
-		GetComponent<Renderer>().material.SetFloat("_Displacement", depthSlider.value);
+		GetComponent<Renderer>().sharedMaterial.SetFloat("_Displacement", depthSlider.value);
+		GetComponent<Renderer>().sharedMaterial.SetFloat("_ForcedPerspective", perspSlider.value);
+		GetComponent<Renderer>().sharedMaterial.SetFloat ("_ParticleSize", sizeSlider.value);
 	}
 
 	void updateSettings()
