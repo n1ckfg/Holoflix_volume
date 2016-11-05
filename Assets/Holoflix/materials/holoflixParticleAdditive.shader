@@ -8,6 +8,7 @@ Shader "Holoflix/ParticleAdditive"
 		_MainTex ("Texture", 2D) = "white" {}
 		_Displacement ("Extrusion Amount", Range(-10,10)) = 0.5
 		_ForcedPerspective("Forced Perspective", Range(-1,20)) = 0
+		_brightnessMod("Brightness", Range(0,2)) = 1
 		_ParticleTex ("Particle Texture", 2D) = "white" {}
 		_ParticleSize ("Particle Size", Range(0.001, 0.5)) = 0.025
 		_ParticleUV ("Particle UV", Range(0, 1)) = 1
@@ -66,6 +67,8 @@ Shader "Holoflix/ParticleAdditive"
 			SamplerState sampler_ParticleTex;
 			float _softPercent;
 			half4 _blackPoint;
+
+			float _brightnessMod;
 			
 			float4 _Dims;
 
@@ -160,9 +163,9 @@ Shader "Holoflix/ParticleAdditive"
 						mask *= 1 - ((d - (1-_softPercent))/_softPercent); //this is the darkening of the slice near 1 (far)
 					
 					//return mask;
-					return col * mask;  //multiply mask after everything because _blackPoint must be included in there or we will get 'hardness' from non-black blackpoints		
+					return col * mask * _brightnessMod;  //multiply mask after everything because _blackPoint must be included in there or we will get 'hardness' from non-black blackpoints		
 				#endif
-				return col;
+				return col * _brightnessMod;
 			}
 			ENDCG
 		}
