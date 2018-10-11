@@ -1,3 +1,5 @@
+// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
 // Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 // Upgrade NOTE: replaced '_World2Object' with 'unity_WorldToObject'
 
@@ -93,7 +95,7 @@ Shader "Holoflix/ParticleCutout"
 				o.uv0 = TRANSFORM_TEX(v.texcoord.xy, _MainTex);
 				o.uv1 = float2(0, 0);
 				
-				o.projPosZ = mul(UNITY_MATRIX_MVP, v.vertex).z;
+				o.projPosZ = UnityObjectToClipPos(v.vertex).z;
 
 				return o;
 			}
@@ -109,7 +111,7 @@ Shader "Holoflix/ParticleCutout"
 				
 				float2 scaleUV = float2(unity_WorldToObject[0][0], unity_WorldToObject[1][1]) * _ParticleSize * _Dims.xy * _ParticleUV;
 				
-				float4x4 vp = mul(UNITY_MATRIX_MVP, unity_WorldToObject);
+				float4x4 vp = UnityObjectToClipPos(unity_WorldToObject);
 				FS_INPUT pIn;
 				pIn.vertex = mul(vp, v[0]);
 				pIn.uv0 = p[0].uv0 + scaleUV * float2(-1, 1);

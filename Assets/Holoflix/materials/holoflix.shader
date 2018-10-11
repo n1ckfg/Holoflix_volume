@@ -1,4 +1,6 @@
-﻿Shader "Holoflix/Holoflix"
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+Shader "Holoflix/Holoflix"
 {
 	Properties
 	{
@@ -61,7 +63,7 @@
 				v.vertex.y += diffY * _ForcedPerspective * d;
 
 				v2f o;
-				o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
+				o.vertex = UnityObjectToClipPos(v.vertex);
 				o.uv = TRANSFORM_TEX(v.uv.xy, _MainTex);
 				UNITY_TRANSFER_FOG(o,o.vertex);
 				o.projPosZ = o.vertex.z;

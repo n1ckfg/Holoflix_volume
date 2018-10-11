@@ -77,8 +77,8 @@ namespace hypercube
             if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.StandaloneWindows)
                 EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTarget.StandaloneWindows);
 #elif UNITY_EDITOR_OSX
-            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.StandaloneOSXUniversal)
-                EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTarget.StandaloneOSXUniversal);
+            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.StandaloneOSX)
+                EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTarget.StandaloneOSX);
 #endif
         }
 

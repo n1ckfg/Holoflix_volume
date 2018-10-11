@@ -1,3 +1,5 @@
+// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
 // Upgrade NOTE: replaced '_Object2World' with 'unity_ObjectToWorld'
 // Upgrade NOTE: replaced '_World2Object' with 'unity_WorldToObject'
 
@@ -92,7 +94,7 @@ Shader "Hidden/Holoflix/ParticleCutoutFallback"
 				v.vertex = mul(unity_WorldToObject, v.vertex);
 				
 				FS_INPUT o;
-				o.vertex = mul(UNITY_MATRIX_MVP, v.vertex);
+				o.vertex = UnityObjectToClipPos(v.vertex);
 				
 				o.uv0 = TRANSFORM_TEX(v.uv0.xy, _MainTex) + float2(-unity_WorldToObject[0][0], unity_WorldToObject[1][1]) * _ParticleSize * _Dims.xy * _ParticleUV * v.uv1;
 				o.uv1 = float2(v.uv1.x * -0.5 + 0.5, v.uv1.y * 0.5 + 0.5);

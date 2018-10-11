@@ -1,4 +1,6 @@
-﻿Shader "Custom/depthTester" {
+﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
+
+Shader "Custom/depthTester" {
 	Properties {
 		_Color ("Color", Color) = (1,1,1,1)
 		_MainTex ("Albedo (RGB)", 2D) = "white" {}
@@ -17,7 +19,7 @@ SubShader {
 			};
 			v2f vert( appdata_base v ) {
 				v2f o;
-				o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
+				o.pos = UnityObjectToClipPos(v.vertex);
 				o.nz.xyz = COMPUTE_VIEW_NORMAL;
 				o.nz.w = COMPUTE_DEPTH_01;
 				return o;
